@@ -1,0 +1,8 @@
+{
+  "name": "Sunflower Theory",
+  "description": "An award-winning level cinematic interactive storytelling website about sunflowers, light, and the emotional symbolism of connection.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
