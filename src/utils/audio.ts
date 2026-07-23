@@ -15,6 +15,7 @@ class SoundscapeEngine {
   private heartbeatGain: GainNode | null = null;
   private delayNode: DelayNode | null = null;
   private feedbackGain: GainNode | null = null;
+  private bgAudio: HTMLAudioElement | null = null;
 
   // Timers and intervals for active synthesis
   private pianoIntervalId: any = null;
@@ -114,30 +115,58 @@ class SoundscapeEngine {
       this.heartbeatGain.connect(this.masterGain);
 
       this.initialized = true;
+      if (typeof window !== 'undefined' && !this.bgAudio) {
+        this.bgAudio = new Audio('/audio.mp3');
+        this.bgAudio.loop = true;
+        this.bgAudio.volume = 0.85;
+      }
       this.startSynthesisLoops();
     } catch (e) {
       console.warn('Web Audio API not supported or blocked:', e);
     }
   }
 
-  public play() {
-    if (!this.initialized) this.init();
-    if (!this.ctx) return;
-
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
-    }
+  public async play() {
+    if (!this.initialized) await this.init();
 
     this.isPlaying = true;
-    
-    // Smooth master fade-in
-    this.masterGain?.gain.linearRampToValueAtTime(0.8, this.ctx.currentTime + 2.0);
+
+    if (this.bgAudio) {
+      this.bgAudio.volume = 1.0;
+      this.bgAudio.play().catch((err) => {
+        console.warn('Primary audio play error, trying fallback URI:', err);
+        if (this.bgAudio) {
+          this.bgAudio.src = '/Khat%20-%20RaagTune.mp3';
+          this.bgAudio.play().catch((e) => console.warn('Fallback audio play error:', e));
+        }
+      });
+    }
+
+    if (this.ctx) {
+      if (this.ctx.state === 'suspended') {
+        await this.ctx.resume();
+      }
+
+      // Keep master gain muted so synthesized wind/synths don't play
+      const now = this.ctx.currentTime;
+      this.masterGain?.gain.cancelScheduledValues(now);
+      this.masterGain?.gain.setValueAtTime(0, now);
+    }
+  }
+
+  public triggerOpeningChord() {
+    // Extra opening chord disabled - only main music plays
+    return;
   }
 
   public pause() {
-    if (!this.ctx) return;
     this.isPlaying = false;
-    this.masterGain?.gain.linearRampToValueAtTime(0.0, this.ctx.currentTime + 1.0);
+    if (this.bgAudio) {
+      this.bgAudio.pause();
+    }
+    if (this.ctx) {
+      this.masterGain?.gain.linearRampToValueAtTime(0.0, this.ctx.currentTime + 1.0);
+    }
   }
 
   public isSoundPlaying(): boolean {
@@ -145,98 +174,24 @@ class SoundscapeEngine {
   }
 
   // Crossfade sound components based on the scroll scene progress
-  public updateScene(scene: StoryScene, sceneProgress: number = 0) {
+  public updateScene(scene: StoryScene, _sceneProgress: number = 0) {
     this.currentScene = scene;
     if (!this.initialized || !this.ctx) return;
 
     const now = this.ctx.currentTime;
 
-    // Default target gains
-    let targetWind = 0.08;
-    let targetBirds = 0.0;
-    let targetCrickets = 0.0;
-    let targetHeartbeat = 0.0;
-    let targetPiano = 0.35;
-
-    switch (scene) {
-      case StoryScene.LOADING:
-        targetWind = 0.02;
-        targetPiano = 0.1;
-        break;
-
-      case StoryScene.HERO:
-        targetWind = 0.06;
-        targetPiano = 0.35;
-        break;
-
-      case StoryScene.MORNING:
-        targetWind = 0.08;
-        targetBirds = 0.12 * (1 - sceneProgress); // birds loudest in morning
-        targetPiano = 0.4;
-        break;
-
-      case StoryScene.AFTERNOON:
-        targetWind = 0.07;
-        targetBirds = 0.06;
-        targetPiano = 0.42;
-        break;
-
-      case StoryScene.SCIENCE:
-        targetWind = 0.04;
-        targetPiano = 0.3;
-        break;
-
-      case StoryScene.GOLDEN_HOUR:
-        targetWind = 0.09;
-        targetCrickets = 0.02 * sceneProgress; // crickets start peeking in
-        targetPiano = 0.45;
-        break;
-
-      case StoryScene.SUNSET:
-        targetWind = 0.05 * (1 - sceneProgress) + 0.02 * sceneProgress;
-        targetCrickets = 0.02 * (1 - sceneProgress) + 0.15 * sceneProgress;
-        targetPiano = 0.35;
-        break;
-
-      case StoryScene.NIGHT:
-        targetWind = 0.03;
-        targetCrickets = 0.22;
-        targetHeartbeat = 0.35;
-        targetPiano = 0.3;
-        break;
-
-      case StoryScene.ENDING:
-        targetWind = 0.01;
-        targetCrickets = 0.02;
-        targetPiano = 0.2 * (1 - sceneProgress); // slowly fade out completely
-        break;
-    }
-
-    // Set smooth ramps
-    this.windGain?.gain.setTargetAtTime(targetWind, now, 1.5);
-    this.birdsGain?.gain.setTargetAtTime(targetBirds, now, 1.5);
-    this.cricketsGain?.gain.setTargetAtTime(targetCrickets, now, 1.5);
-    this.heartbeatGain?.gain.setTargetAtTime(targetHeartbeat, now, 2.0);
-    this.pianoGain?.gain.setTargetAtTime(targetPiano, now, 1.5);
+    // All synthesized ambient sounds disabled - only Khat music plays
+    this.windGain?.gain.setTargetAtTime(0, now, 0.5);
+    this.birdsGain?.gain.setTargetAtTime(0, now, 0.5);
+    this.cricketsGain?.gain.setTargetAtTime(0, now, 0.5);
+    this.heartbeatGain?.gain.setTargetAtTime(0, now, 0.5);
+    this.pianoGain?.gain.setTargetAtTime(0, now, 0.5);
   }
 
   private startSynthesisLoops() {
-    if (!this.ctx) return;
-
-    // 1. Procedural Wind Synthesis (White Noise + Bandpass Filter Modulation)
-    this.synthesizeWind();
-
-    // 2. Procedural Piano (Dreamy ambient arpeggio chord player)
-    this.schedulePianoArpeggio();
-
-    // 3. Random Morning Bird Chirping
-    this.scheduleBirdChirps();
-
-    // 4. Night Crickets Noise
-    this.scheduleCrickets();
-
-    // 5. Heartbeat Bass
-    this.scheduleHeartbeat();
+    // All background procedural synthesis (wind, birds, crickets, synth piano) disabled.
+    // Only Khat music track plays.
+    return;
   }
 
   private synthesizeWind() {

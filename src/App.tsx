@@ -204,7 +204,7 @@ export default function App() {
 
     // Initialise synthesized soundtrack
     await soundscape.init();
-    soundscape.play();
+    await soundscape.play();
     soundscape.updateScene(StoryScene.HERO, 0);
   };
 
