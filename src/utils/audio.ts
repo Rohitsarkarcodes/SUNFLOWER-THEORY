@@ -13,7 +13,7 @@ const getAudioCandidateUrls = (): string[] => {
   } catch {}
 
   try {
-    const assetUrl2 = new URL('../assets/Khat - RaagTune.mp3', import.meta.url).href;
+    const assetUrl2 = new URL('../assets/khat song.mpeg', import.meta.url).href;
     if (assetUrl2) candidates.push(assetUrl2);
   } catch {}
 
@@ -21,7 +21,7 @@ const getAudioCandidateUrls = (): string[] => {
   const origin = window.location.origin;
   const href = window.location.href;
   const base = (import.meta as any).env?.BASE_URL || './';
-  const filenames = ['audio.mp3', 'Khat - RaagTune.mp3', 'Khat%20-%20RaagTune.mp3'];
+  const filenames = ['audio.mp3', 'khat song.mpeg', 'Khat%20-%20RaagTune.mp3'];
 
   for (const name of filenames) {
     try {
