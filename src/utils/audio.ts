@@ -4,17 +4,24 @@ import { StoryScene } from '../types';
 const getAudioCandidateUrls = (): string[] => {
   if (typeof window === 'undefined') return [];
 
-  let importedAssetUrl = '';
+  const candidates: string[] = [];
+
+  // 1. Vite bundled asset URLs (works on GitHub Pages, relative bases, and custom subpaths)
   try {
-    importedAssetUrl = new URL('../assets/audio.mp3', import.meta.url).href;
+    const assetUrl1 = new URL('../assets/audio.mp3', import.meta.url).href;
+    if (assetUrl1) candidates.push(assetUrl1);
   } catch {}
 
-  const candidates: string[] = importedAssetUrl ? [importedAssetUrl] : [];
+  try {
+    const assetUrl2 = new URL('../assets/Khat - RaagTune.mp3', import.meta.url).href;
+    if (assetUrl2) candidates.push(assetUrl2);
+  } catch {}
+
+  // 2. Base URL & relative paths for public/ directory assets
   const origin = window.location.origin;
   const href = window.location.href;
   const base = (import.meta as any).env?.BASE_URL || './';
-
-  const filenames = ['Khat - RaagTune.mp3'];
+  const filenames = ['audio.mp3', 'Khat - RaagTune.mp3', 'Khat%20-%20RaagTune.mp3'];
 
   for (const name of filenames) {
     try {
