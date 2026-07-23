@@ -14,7 +14,7 @@ const getAudioCandidateUrls = (): string[] => {
   const href = window.location.href;
   const base = (import.meta as any).env?.BASE_URL || './';
 
-  const filenames = ['audio.mp3', 'Khat - RaagTune.mp3', 'Khat%20-%20RaagTune.mp3'];
+  const filenames = ['Khat - RaagTune.mp3'];
 
   for (const name of filenames) {
     try {
