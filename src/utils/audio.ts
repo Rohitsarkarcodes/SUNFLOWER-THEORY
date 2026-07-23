@@ -4,7 +4,12 @@ import { StoryScene } from '../types';
 const getAudioCandidateUrls = (): string[] => {
   if (typeof window === 'undefined') return [];
 
-  const candidates: string[] = [];
+  let importedAssetUrl = '';
+  try {
+    importedAssetUrl = new URL('../assets/audio.mp3', import.meta.url).href;
+  } catch {}
+
+  const candidates: string[] = importedAssetUrl ? [importedAssetUrl] : [];
   const origin = window.location.origin;
   const href = window.location.href;
   const base = (import.meta as any).env?.BASE_URL || './';
@@ -12,12 +17,10 @@ const getAudioCandidateUrls = (): string[] => {
   const filenames = ['audio.mp3', 'Khat - RaagTune.mp3', 'Khat%20-%20RaagTune.mp3'];
 
   for (const name of filenames) {
-    // 1. URL resolution relative to location href
     try {
       candidates.push(new URL(name, href).href);
     } catch {}
 
-    // 2. Vite base URL
     if (base.startsWith('/')) {
       try {
         candidates.push(origin + base + (base.endsWith('/') ? '' : '/') + name);
@@ -28,12 +31,11 @@ const getAudioCandidateUrls = (): string[] => {
       } catch {}
     }
 
-    // 3. Fallback direct relative strings
     candidates.push(`./${name}`);
     candidates.push(`/${name}`);
   }
 
-  return Array.from(new Set(candidates));
+  return Array.from(new Set(candidates.filter(Boolean)));
 };
 
 class SoundscapeEngine {
@@ -48,12 +50,11 @@ class SoundscapeEngine {
   private birdsGain: GainNode | null = null;
   private cricketsGain: GainNode | null = null;
   private heartbeatGain: GainNode | null = null;
-  private delayNode: DelayNode | null = null;
-  private feedbackGain: GainNode | null = null;
 
   private bgAudio: HTMLAudioElement | null = null;
   private currentSourceIndex = 0;
   private audioCandidates: string[] = [];
+  private unlockListenerAttached = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -69,6 +70,8 @@ class SoundscapeEngine {
     this.bgAudio = new Audio();
     this.bgAudio.loop = true;
     this.bgAudio.volume = 1.0;
+    this.bgAudio.preload = 'auto';
+    (this.bgAudio as any).playsInline = true;
 
     if (this.audioCandidates.length > 0) {
       this.bgAudio.src = this.audioCandidates[0];
@@ -113,6 +116,27 @@ class SoundscapeEngine {
     }
   }
 
+  private setupUserInteractionUnlock() {
+    if (this.unlockListenerAttached || typeof window === 'undefined') return;
+    this.unlockListenerAttached = true;
+
+    const unlock = () => {
+      if (this.isPlaying && this.bgAudio && this.bgAudio.paused) {
+        this.bgAudio.play().then(() => {
+          this.unlockListenerAttached = false;
+        }).catch(() => {
+          this.unlockListenerAttached = false;
+        });
+      } else {
+        this.unlockListenerAttached = false;
+      }
+    };
+
+    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('touchstart', unlock, { once: true });
+    window.addEventListener('pointerdown', unlock, { once: true });
+  }
+
   public play() {
     this.isPlaying = true;
     this.initAudioElement();
@@ -126,23 +150,42 @@ class SoundscapeEngine {
     if (this.bgAudio) {
       this.bgAudio.volume = 1.0;
 
-      const attemptPlay = () => {
+      const attemptPlay = (startIndex: number) => {
         if (!this.bgAudio) return;
+        
+        if (startIndex >= this.audioCandidates.length) {
+          // If all candidates failed, reset source index back to 0 for next retry
+          this.currentSourceIndex = 0;
+          this.bgAudio.src = this.audioCandidates[0];
+          this.setupUserInteractionUnlock();
+          return;
+        }
+
+        const candidateSrc = this.audioCandidates[startIndex];
+        if (this.bgAudio.src !== candidateSrc) {
+          this.bgAudio.src = candidateSrc;
+          this.bgAudio.load();
+        }
+
         const promise = this.bgAudio.play();
         if (promise !== undefined) {
-          promise.catch((err) => {
-            console.warn(`Audio play failed for source (${this.bgAudio?.src}):`, err);
-            if (this.currentSourceIndex + 1 < this.audioCandidates.length) {
-              this.currentSourceIndex++;
-              this.bgAudio!.src = this.audioCandidates[this.currentSourceIndex];
-              this.bgAudio!.load();
-              attemptPlay();
+          promise.then(() => {
+            this.currentSourceIndex = startIndex;
+          }).catch((err) => {
+            console.warn(`Audio play failed for source index ${startIndex} (${candidateSrc}):`, err);
+            
+            // Check if error is due to user interaction requirement (NotAllowedError)
+            if (err?.name === 'NotAllowedError') {
+              this.setupUserInteractionUnlock();
+            } else {
+              // Try next candidate source
+              attemptPlay(startIndex + 1);
             }
           });
         }
       };
 
-      attemptPlay();
+      attemptPlay(this.currentSourceIndex);
     }
   }
 
@@ -161,7 +204,7 @@ class SoundscapeEngine {
   }
 
   public isSoundPlaying(): boolean {
-    return this.isPlaying;
+    return this.isPlaying && !!this.bgAudio && !this.bgAudio.paused;
   }
 
   // Crossfade sound components based on the scroll scene progress
@@ -193,3 +236,4 @@ class SoundscapeEngine {
 }
 
 export const soundscape = new SoundscapeEngine();
+
