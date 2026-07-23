@@ -1,6 +1,17 @@
 // Procedural Web Audio API Soundscape Synthesizer for Sunflower Theory
 import { StoryScene } from '../types';
 
+const getAudioUrl = (filename: string): string => {
+  if (typeof window === 'undefined') return filename;
+  const cleanFilename = filename.startsWith('/') ? filename.slice(1) : filename;
+  const base = (import.meta as any).env?.BASE_URL || './';
+  try {
+    return new URL(cleanFilename, new URL(base, window.location.href)).href;
+  } catch {
+    return `${base}${cleanFilename}`;
+  }
+};
+
 class SoundscapeEngine {
   private ctx: AudioContext | null = null;
   private initialized = false;
@@ -116,9 +127,9 @@ class SoundscapeEngine {
 
       this.initialized = true;
       if (typeof window !== 'undefined' && !this.bgAudio) {
-        this.bgAudio = new Audio('/audio.mp3');
+        this.bgAudio = new Audio(getAudioUrl('audio.mp3'));
         this.bgAudio.loop = true;
-        this.bgAudio.volume = 0.85;
+        this.bgAudio.volume = 1.0;
       }
       this.startSynthesisLoops();
     } catch (e) {
@@ -136,7 +147,7 @@ class SoundscapeEngine {
       this.bgAudio.play().catch((err) => {
         console.warn('Primary audio play error, trying fallback URI:', err);
         if (this.bgAudio) {
-          this.bgAudio.src = '/Khat%20-%20RaagTune.mp3';
+          this.bgAudio.src = getAudioUrl('Khat - RaagTune.mp3');
           this.bgAudio.play().catch((e) => console.warn('Fallback audio play error:', e));
         }
       });
