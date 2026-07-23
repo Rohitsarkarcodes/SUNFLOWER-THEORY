@@ -196,15 +196,15 @@ export default function App() {
   };
 
   // Start Experience click handler (Required to unlock Web Audio API)
-  const handleBeginStory = async () => {
+  const handleBeginStory = () => {
     setActiveScene(StoryScene.HERO);
     setScrollProgress(0);
     setLerpedProgress(0);
     setIsCinematicPlaying(true);
 
-    // Initialise synthesized soundtrack
-    await soundscape.init();
-    await soundscape.play();
+    // Initialise and play soundtrack synchronously
+    soundscape.init();
+    soundscape.play();
     soundscape.updateScene(StoryScene.HERO, 0);
   };
 

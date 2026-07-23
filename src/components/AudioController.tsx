@@ -10,12 +10,12 @@ export default function AudioController() {
     setIsPlaying(soundscape.isSoundPlaying());
   }, []);
 
-  const toggleSound = async () => {
+  const toggleSound = () => {
     if (isPlaying) {
       soundscape.pause();
       setIsPlaying(false);
     } else {
-      await soundscape.init();
+      soundscape.init();
       soundscape.play();
       setIsPlaying(true);
     }
