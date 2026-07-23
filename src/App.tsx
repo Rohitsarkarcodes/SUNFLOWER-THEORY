@@ -377,10 +377,12 @@ export default function App() {
             <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[size:32px_32px] opacity-25 pointer-events-none z-0" />
 
             {/* Minimal Header */}
-            <div className="flex flex-col items-center gap-2 mt-6 relative z-10 select-none">
-              <span className="text-[10px] tracking-[0.4em] font-mono text-[#FFD54F]/70 uppercase">Prestige Storybook</span>
-              <h2 className="text-xl tracking-widest font-light text-[#FFF3B0] uppercase" style={{ fontFamily: "Georgia, serif" }}>
-                🌻 The Sunflower Theory 🌻
+            <div className="flex flex-col items-center gap-2 mt-6 relative z-10 select-none w-full px-2">
+              <span className="text-[10px] tracking-[0.4em] font-mono text-[#FFD54F]/70 uppercase whitespace-nowrap">Prestige Storybook</span>
+              <h2 className="text-base sm:text-xl tracking-wider sm:tracking-widest font-light text-[#FFF3B0] uppercase whitespace-nowrap flex items-center justify-center gap-1.5 sm:gap-2" style={{ fontFamily: "Georgia, serif" }}>
+                <span className="shrink-0">🌻</span>
+                <span className="whitespace-nowrap">The Sunflower Theory</span>
+                <span className="shrink-0">🌻</span>
               </h2>
             </div>
 
