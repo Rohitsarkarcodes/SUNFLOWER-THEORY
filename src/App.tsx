@@ -348,17 +348,9 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.8, ease: "easeInOut" }}
-            className="absolute inset-0 z-50 bg-[#010307] flex flex-col items-center justify-center pointer-events-auto"
+            className="absolute inset-0 z-50 bg-[#010307] pointer-events-auto"
             id="cinematic-transition-overlay"
-          >
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 0.4 }}
-              exit={{ scale: 1.1, opacity: 0 }}
-              transition={{ duration: 1.0 }}
-              className="w-2 h-2 rounded-full bg-[#FFD54F] shadow-[0_0_20px_#FFD54F]"
-            />
-          </motion.div>
+          />
         )}
       </AnimatePresence>
 

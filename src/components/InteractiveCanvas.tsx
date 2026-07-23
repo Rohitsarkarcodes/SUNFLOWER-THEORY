@@ -740,20 +740,20 @@ export default function InteractiveCanvas({
         const elapsed = cf - p.birthFrame;
         const progress = Math.min(1.0, elapsed / 180);
 
-        // Attracted to spiral centers or left/right streams
+        // Float upwards into the sky
         if (cf < 540) {
           const angle = (cf * 0.06) + p.birthFrame;
-          const targetR = 10 * (1 - progress);
+          const targetR = 15 * (1 - progress);
           const tx = width / 2 + Math.cos(angle) * targetR;
-          const ty = height / 2 + Math.sin(angle) * targetR;
+          const ty = height * 0.35 + Math.sin(angle) * targetR;
           p.x += (tx - p.x) * 0.1;
           p.y += (ty - p.y) * 0.1;
         } else {
           const isLeft = p.birthFrame % 2 === 0;
-          const targetX = isLeft ? width * 0.42 : width * 0.58;
-          const targetY = height * 0.55;
-          p.x += (targetX - p.x) * 0.08;
-          p.y += (targetY - p.y) * 0.08;
+          const targetX = isLeft ? width * 0.25 : width * 0.75;
+          const targetY = height * 0.2;
+          p.x += (targetX - p.x) * 0.05;
+          p.y += (targetY - p.y) * 0.05;
         }
 
         p.alpha += (p.maxAlpha - p.alpha) * 0.1;
@@ -766,22 +766,6 @@ export default function InteractiveCanvas({
         p.x += p.vx;
         p.y += p.vy;
         p.rotation += p.rotSpeed;
-
-        // Swirling force around the stems in Stage 5
-        if (cf >= 1440 && cf < 1800) {
-          const isLeft = p.x < width / 2;
-          const targetX = isLeft ? width * 0.42 : width * 0.58;
-          const targetY = height * 0.72 - 170;
-
-          const dx = targetX - p.x;
-          const dy = targetY - p.y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 180) {
-            const force = (180 - d) * 0.003;
-            p.vx += -dy * force * 0.02;
-            p.vy += dx * force * 0.02;
-          }
-        }
 
         if (cf > 2280) {
           p.alpha -= 0.005;
